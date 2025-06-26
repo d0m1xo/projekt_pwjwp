@@ -11,6 +11,10 @@ class DatabaseHandler:
         with sqlite3.connect(self.db_path) as conn:
             return pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
 
+    def upload_table(self, dataframe, table_name: str):
+        with sqlite3.connect(self.db_path) as conn:
+            return dataframe.to_sql(table_name, conn, if_exists='replace', index=False)
+
 
 st.title("Analiza danych dotycząca pingwinów")
 st.caption("projekt z przedmiotu programowanie w języku wysokiego poziomu II")

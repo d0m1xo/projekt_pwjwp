@@ -1,28 +1,28 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import numpy as npimport
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
+from app import DatabaseHandler
 
 st.title("Klasyfikacja")
 st.text('Znaleźliśmy już wartości odstające i pozbyliśmy się ich z naszego zbioru danych. Możemy zatem przejśc'
         'do prób tworzenia modeli klasyfikujących pingwiny na podstawie atrybutów.')
 
-conn = sqlite3.connect("pingwiny_db.db")
+baza = DatabaseHandler("pingwiny_db.db")
 
 try:
-    df = pd.read_sql_query("SELECT * FROM pingwiny_zmodyfikowane", conn)
+    df = baza.load_table('pingwiny_zmodyfikowane')
     st.text("Dane z usuniętymi wartościami odstającymi")
 except Exception as e:
-    df = pd.read_sql_query("SELECT * FROM pingwiny", conn)
+    df = baza.load_table('pingwiny')
     st.text("Dane pierwotne")
 
 df = df.dropna(subset=['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g'])
-conn.close()
 
 x = df[['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g']]
 train_x, test_x, train_y, test_y = train_test_split(x, df['species'], test_size=0.2, random_state=42)

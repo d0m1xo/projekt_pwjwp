@@ -5,6 +5,7 @@ import sqlite3
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+from app import DatabaseHandler
 
 st.title("Wartości odstające")
 st.text('Chcąc przejść do analizy danych, najpierw można zająć się detekcją i wykluczeniem wartości odstających.'
@@ -13,8 +14,10 @@ st.text('Chcąc przejść do analizy danych, najpierw można zająć się detekc
         'punktów. Do znajdowania odpowiedniego parametru eps, można stworzyć wykres odległości do określonej liczby '
         'sąsiadów. Naszą odległością powinna być wartość, dla której wykres ma najwiekszy wzrost.')
 
-conn = sqlite3.connect("pingwiny_db.db")
-df = pd.read_sql('SELECT * FROM pingwiny', conn)
+baza = DatabaseHandler('pingwiny_db.db')
+#conn = sqlite3.connect("pingwiny_db.db")
+#df = pd.read_sql('SELECT * FROM pingwiny', conn)
+df = baza.load_table('pingwiny')
 df = df.dropna(subset=['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g'])
 
 if "df" not in st.session_state:
@@ -56,6 +59,7 @@ if st.session_state.labels is not None:
         st.session_state.df_cleaned = df_cleaned
         st.success("Usunięto obserwacje odstające.", icon="✅")
         st.write(f"Liczba pozostałych obserwacji: {len(df_cleaned)}")
-        df_cleaned.to_sql('pingwiny_zmodyfikowane', conn, if_exists='replace', index=False)
+        #df_cleaned.to_sql('pingwiny_zmodyfikowane', conn, if_exists='replace', index=False)
+        baza.upload_table(df_cleaned, 'pingwiny_zmodyfikowane')
 
-conn.close()
+#conn.close()
