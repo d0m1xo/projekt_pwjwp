@@ -7,6 +7,22 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from app import DatabaseHandler
 
+
+class OutlierRemover:
+    def __init__(self, epsilon=0.8, minimum_samples=8):
+        self.epsilon = epsilon
+        self.minimum_samples = minimum_samples
+        self.labels_ = None
+
+    def fit_predict(self, x):
+        db = DBSCAN(eps=self.epsilon, min_samples=self.minimum_samples)
+        self.labels_ = db.fit_predict(x)
+        return self.labels_
+
+    def remove_outliers(self, df, label_column="label"):
+        return df[df[label_column] != -1].copy()
+
+
 st.title("Wartości odstające")
 st.text('Chcąc przejść do analizy danych, najpierw można zająć się detekcją i wykluczeniem wartości odstających.'
         'Stosuje się różne metody, ale tutaj zaprezentowany zostanie algorytm DBSCAN. Przyjmuje on takie argumenty'
@@ -15,8 +31,6 @@ st.text('Chcąc przejść do analizy danych, najpierw można zająć się detekc
         'sąsiadów. Naszą odległością powinna być wartość, dla której wykres ma najwiekszy wzrost.')
 
 baza = DatabaseHandler('pingwiny_db.db')
-#conn = sqlite3.connect("pingwiny_db.db")
-#df = pd.read_sql('SELECT * FROM pingwiny', conn)
 df = baza.load_table('pingwiny')
 df = df.dropna(subset=['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g'])
 
@@ -42,8 +56,8 @@ if st.button("Uruchom DBSCAN"):
     st.balloons()
     x = st.session_state.df[['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g']]  # tylko kolumny numeryczne
     x = StandardScaler().fit_transform(x)
-    db = DBSCAN(eps=eps, min_samples=min_samples)
-    labels = db.fit_predict(x)
+    outliers = OutlierRemover(eps, min_samples)
+    labels = outliers.fit_predict(x)
     st.session_state.df["label"] = labels
     st.session_state.labels = labels
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
@@ -55,11 +69,11 @@ if st.button("Uruchom DBSCAN"):
 # Drugi przycisk: usuń obserwacje odstające
 if st.session_state.labels is not None:
     if st.button("Usuń obserwacje odstające"):
-        df_cleaned = st.session_state.df[st.session_state.df["label"] != -1].copy()
+        #df_cleaned = st.session_state.df[st.session_state.df["label"] != -1].copy()
+        df_cleaned = OutlierRemover(eps, min_samples).remove_outliers(df=st.session_state.df)
         st.session_state.df_cleaned = df_cleaned
         st.success("Usunięto obserwacje odstające.", icon="✅")
         st.write(f"Liczba pozostałych obserwacji: {len(df_cleaned)}")
-        #df_cleaned.to_sql('pingwiny_zmodyfikowane', conn, if_exists='replace', index=False)
         baza.upload_table(df_cleaned, 'pingwiny_zmodyfikowane')
 
-#conn.close()
+
